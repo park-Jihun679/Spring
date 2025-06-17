@@ -18,6 +18,7 @@ import org.springframework.web.servlet.view.JstlView;
         "org.scoula.controller",
         "org.scoula.board.mapper",
         "org.scoula.board.service",
+        "org.scoula.board.controller",
 
 })
 public class ServletConfig implements WebMvcConfigurer {
