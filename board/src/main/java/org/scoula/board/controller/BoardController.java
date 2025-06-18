@@ -1,100 +1,110 @@
 package org.scoula.board.controller;
 
-import java.io.File;
-import javax.servlet.http.HttpServletResponse;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.scoula.board.domain.BoardAttachmentVO;
 import org.scoula.board.dto.BoardDTO;
 import org.scoula.board.service.BoardService;
-import org.scoula.common.util.UploadFiles;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
-@Log4j2
-@Controller
-@RequestMapping("/board")
+@RequestMapping("/api/board")
 @RequiredArgsConstructor
+@Log4j2
+//@Controller + @ResponseBody
+@RestController //views로 넘어가지 않고 모두 data로 응답하겠다!
+@Api(tags = "게시글 관리")
 public class BoardController {
 
-    private final BoardService service;
+    private final BoardService service;//생성자 주입
 
-//    public BoardController(BoardService service) {
-//        this.service = service;
-//    }
-
-    @GetMapping("/list") //board/list
-    public void list(Model model) {
-        //db에서 가지고 온 것 있어야함.
-        //Controller --> Service --> dao
-        log.info("===============> BoardController /list");
-        model.addAttribute("list", service.getList());
-        //요청한 주소와 views의 호출할 파일명이 같으면 return안해도됨.
-    }
-//    @GetMapping("/get") //board/get
-//    @GetMapping("/create") //board/create(입력화면 보여줘)
-//    @GetMapping("/update") //board/update(수정하기 전에 검색먼저해서 한번 보여줘)
-//
-//    @PostMapping("/create") //board/create(입력한거 db처리해줘)
-
-    @GetMapping("/create")
-    public void create() {
-        log.info("create");
+    @ApiOperation(value = "게시글 목록", notes = "게시글 목록을 얻는 API")
+    @GetMapping("") // ==> /api/board
+    //@ResponseBody//컨트롤러에서 views로 넘어가지 않고
+    //http의 body에 리턴값을 넣어서 응답해라!
+    public ResponseEntity<List<BoardDTO>> getList(){
+        return ResponseEntity.ok(service.getList());
     }
 
-    @PostMapping("/create")
-    public String create(BoardDTO board) {
-        log.info("create: " + board);
-        service.create(board);
-        return "redirect:/board/list";
+    @GetMapping("/get") // ==> /api/board/get?no=1
+    public BoardDTO get(@RequestParam("no") Long no){
+        return service.get(no);
     }
 
-    @GetMapping({"/get", "/update"})
-    public void get(@RequestParam("no") Long no, Model model) {
-        log.info("/get or update");
-        model.addAttribute("board", service.get(no));
-        /* url에 따라 jsp 파일을 "board/get" 또는 "board/update" 반환 */
+    @ApiOperation(value = "상세정보얻기", notes = "게시글상제정보를얻는API")
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = "성공적으로요청이처리되었습니다.", response = BoardDTO.class),
+        @ApiResponse(code = 400, message = "잘못된요청입니다."),
+        @ApiResponse(code = 500, message = "서버에서오류가발생했습니다.")
+    })
+    @GetMapping("/get/{no}") // ==> /api/board/get/15
+    public BoardDTO get2(
+        @ApiParam(value = "게시글 ID", required = true, example = "1")
+        @PathVariable Long no){
+        return service.get(no);
     }
 
-    @PostMapping("/update")
-    public String update(BoardDTO board) {
-        log.info("update:" + board);
-        service.update(board);
-        return "redirect:/board/list";
-    }
-
-    @PostMapping("/delete")
-    public String delete(@RequestParam("no") Long no) {
-        log.info("delete..." + no);
-        service.delete(no);
-        return "redirect:/board/list";
+    @PostMapping("") // ==> /api/board + post
+    public ResponseEntity<BoardDTO> create(@RequestBody BoardDTO dto){
+        //@RequestBody --> 브라우저에서 보낼때도  json으로 보낼 수 있음.
+        //서버에서 json을 받을 때 사용하는 어노테이션!
+        return ResponseEntity.ok(service.create(dto));
     }
 
     /**
-     * 파일 다운로드 처리
-     * @param no 첨부파일 번호
-     * @param response HTTP 응답 객체
-     * @throws Exception
+     * 게시글 수정
+     * PUT: http://localhost:8080/api/board/{no}
+     * @param no 수정할 게시글 번호(PK)
+     * @param board 수정할 게시글 데이터 (제목, 내용 등)
+     * @return ResponseEntity<BoardDTO>
+     *         - 200 OK: 게시글 수정 성공 시 수정된 게시글 데이터 반환
+     *         - 400 Bad Request: 잘못된 요청 데이터 (제목/내용 누락, 잘못된 번호 형식 등)
+     *         - 404 Not Found: 수정할 게시글이 존재하지 않음
+     *         - 500 Internal Server Error: 서버 내부 오류 발생 시
      */
-    @GetMapping("/download/{no}")
-    @ResponseBody  // View를 사용하지 않고 직접 응답 데이터 전송
-    public void download(@PathVariable("no") Long no,
-        HttpServletResponse response) throws Exception {
+    @PutMapping("/{no}")
+    public ResponseEntity<BoardDTO> update(
+        @PathVariable Long no,           // URL에서 게시글 번호 추출
+        @RequestBody BoardDTO board      // 수정할 데이터 (JSON)
+    ) {
+        log.info("============> 게시글 수정: " + no + ", " + board);
 
-        // 첨부파일 정보 조회
-        BoardAttachmentVO attach = service.getAttachment(no);
+        // 게시글 번호 설정 (안전성을 위해)
+        board.setNo(no);
+        BoardDTO updatedBoard = service.update(board);
+        return ResponseEntity.ok(updatedBoard);
+    }
 
-        // 실제 파일 객체 생성
-        // (java.io.File)
-        File file = new File(attach.getPath());
+    /**
+     * 게시글 삭제
+     * DELETE: http://localhost:8080/api/board/{no}
+     * @param no 삭제할 게시글 번호(PK)
+     * @return ResponseEntity<BoardDTO>
+     *         - 200 OK: 게시글 삭제 성공 시 삭제된 게시글 데이터 반환
+     *         - 204 No Content: 게시글 삭제 성공 (응답 데이터 불필요한 경우)
+     *         - 400 Bad Request: 잘못된 게시글 번호 형식 (음수, 문자 등)
+     *         - 404 Not Found: 삭제할 게시글이 존재하지 않음
+     *         - 500 Internal Server Error: 서버 내부 오류 발생 시
+     */
+    @DeleteMapping("/{no}")
+    public ResponseEntity<BoardDTO> delete(@PathVariable Long no) {
+        log.info("============> 게시글 삭제: " + no);
 
-        // 파일 다운로드 처리
-        UploadFiles.download(response, file, attach.getFilename());
+        // 삭제된 게시글 정보를 반환
+        BoardDTO deletedBoard = service.delete(no);
+        return ResponseEntity.ok(deletedBoard);
     }
 }

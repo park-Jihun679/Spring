@@ -11,11 +11,11 @@ public interface BoardService {
 
     BoardDTO get(Long no);
 
-    void create(BoardDTO board);
+    BoardDTO create(BoardDTO board);
 
-    boolean update(BoardDTO board);
+    BoardDTO update(BoardDTO board);
 
-    boolean delete(Long no);
+    BoardDTO delete(Long no);
 
 
     // 첨부파일 관련 메서드 추가
