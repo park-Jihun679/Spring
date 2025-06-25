@@ -57,6 +57,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .invalidateHttpSession(true)
             .deleteCookies("JSESSION-ID")
             .logoutSuccessUrl("/security/logout");
+
+        http.sessionManagement()
+            .maximumSessions(1)                        // 동시 세션 수 제한
+            .maxSessionsPreventsLogin(false)           // 새 로그인시 기존 세션 만료
+            .expiredUrl("/security/login?expired");
+
+        http.rememberMe()
+            .key("uniqueAndSecret")                    // 🔑 암호화 키
+            .tokenValiditySeconds(86400)               // ⏰ 24시간 유효
+            .userDetailsService(userDetailsService);
     }
 
     /*
