@@ -36,6 +36,7 @@ public class WeatherController {
             .queryParam("APPID", API_KEY)
             .queryParam("lang", "kr")
             .toUriString();
+        log.info("--------> " + url);
         WeatherDTO weather = restTemplate.getForObject(url, WeatherDTO.class);
         String iconUrl = ICON_URL.formatted(weather.getWeather().get(0).getIcon());
         log.info("오늘의 날씨: " + weather);

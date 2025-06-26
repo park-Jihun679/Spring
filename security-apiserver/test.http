@@ -1,0 +1,22 @@
+### 로그인 성공 테스트
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "user0",
+  "password": "1234"
+}
+
+### eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyMCIsImlhdCI6MTc1MDgzMTg4NywiZXhwIjoxNzUwODMyMTg3LCJyb2xlIjoiUk9MRV9NRU1CRVIifQ.0QjwqqpXtM7yLRdCSaYU0rxRWhfvL2_suIcDVS4TVCY
+
+### 로그인 실패 테스트
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "user0",
+  "password": "12345"
+}
+
+### 공개 엔드포인트 접근
+GET http://localhost:8080/api/security/all
